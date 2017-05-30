@@ -15,12 +15,12 @@
 // Address1: 0xBB 
 // Frequency: 433.92000 MHz
 // Data Format: Serial mode disable 
-// Deviation: 5.000 kHz
+// Deviation: 25.000 kHz
 // Packet Length Config: Variable 
 // Max Packet Length: 128 
 // Packet Length: 20 
-// RX Filter BW: 39 kHz
-// Symbol Rate: 10.00061 kBaud
+// RX Filter BW: 98 kHz
+// Symbol Rate: 50.00000 kBaud
 // Sync Word Length: 32 Bits 
 // TX Power: 15 dBm (requires define CCFG_FORCE_VDDR_HH = 1 in ccfg.c, see CC13xx/CC26xx Technical Reference Manual)
 // Whitening: No whitening 
@@ -38,8 +38,8 @@
 #include DEVICE_FAMILY_PATH(driverlib/rf_common_cmd.h)
 #include DEVICE_FAMILY_PATH(driverlib/rf_prop_cmd.h)
 #include <ti/drivers/rf/RF.h>
-#include DEVICE_FAMILY_PATH(rf_patches/rf_patch_cpe_lrm.h)
-#include DEVICE_FAMILY_PATH(rf_patches/rf_patch_rfe_lrm.h)
+#include DEVICE_FAMILY_PATH(rf_patches/rf_patch_cpe_genfsk.h)
+#include DEVICE_FAMILY_PATH(rf_patches/rf_patch_rfe_genfsk.h)
 #include "smartrf_settings.h"
 
 
@@ -47,17 +47,17 @@
 RF_Mode RF_prop =
 {
     .rfMode = RF_MODE_PROPRIETARY_SUB_1,
-    .cpePatchFxn = &rf_patch_cpe_lrm,
+    .cpePatchFxn = &rf_patch_cpe_genfsk,
     .mcePatchFxn = 0,
-    .rfePatchFxn = &rf_patch_rfe_lrm,
+    .rfePatchFxn = &rf_patch_rfe_genfsk,
 };
 
 // Overrides for CMD_PROP_RADIO_DIV_SETUP
 static uint32_t pOverrides[] =
 {
-    // override_use_patch_prop_lrm.xml
-    // PHY: Use MCE ROM bank 3, RFE RAM patch
-    MCE_RFE_OVERRIDE(0,3,0,1,0,0),
+    // override_use_patch_prop_genfsk.xml
+    // PHY: Use MCE ROM bank 4, RFE RAM patch
+    MCE_RFE_OVERRIDE(0,4,0,1,0,0),
     // override_synth_prop_430_510_div10.xml
     // Synth: Set recommended RTRIM to 7
     HW_REG_OVERRIDE(0x4038,0x0037),
@@ -103,9 +103,6 @@ static uint32_t pOverrides[] =
     HW_REG_OVERRIDE(0x6088,0x411A),
     // Tx: Configure PA ramping setting
     HW_REG_OVERRIDE(0x608C,0x8213),
-    // override_phy_lrm_rom_dsss8.xml
-    // PHY: Configure DSSS=8
-    HW_REG_OVERRIDE(0x505C,0x073C),
     // override_phy_rx_rssi_offset_neg2db.xml
     // Rx: Set RSSI offset to adjust reported RSSI by -2 dB
     (uint32_t)0x000288A3,
@@ -130,17 +127,17 @@ rfc_CMD_PROP_RADIO_DIV_SETUP_t RF_cmdPropRadioDivSetup =
     .startTrigger.pastTrig = 0x0,
     .condition.rule = 0x1,
     .condition.nSkip = 0x0,
-    .modulation.modType = 0x0,
-    .modulation.deviation = 0x14,
+    .modulation.modType = 0x1,
+    .modulation.deviation = 0x64,
     .symbolRate.preScale = 0xF,
-    .symbolRate.rateWord = 0x199A,
-    .rxBw = 0x20,
-    .preamConf.nPreamBytes = 0x5,
+    .symbolRate.rateWord = 0x8000,
+    .rxBw = 0x24,
+    .preamConf.nPreamBytes = 0x4,
     .preamConf.preamMode = 0x0,
     .formatConf.nSwBits = 0x20,
     .formatConf.bBitReversal = 0x0,
-    .formatConf.bMsbFirst = 0x0,
-    .formatConf.fecMode = 0x8,
+    .formatConf.bMsbFirst = 0x1,
+    .formatConf.fecMode = 0x0,
     .formatConf.whitenMode = 0x0,
     .config.frontEndMode = 0x0,
     .config.biasMode = 0x1,
@@ -195,7 +192,7 @@ rfc_CMD_PROP_TX_t RF_cmdPropTx =
     .pktConf.bUseCrc = 0x1,
     .pktConf.bVarLen = 0x1,
     .pktLen = 0x14, // SET APPLICATION PAYLOAD LENGTH
-    .syncWord = 0x00000000,
+    .syncWord = 0x930B51DE,
     .pPkt = 0, // INSERT APPLICABLE POINTER: (uint8_t*)&xxx
 };
 
@@ -228,7 +225,7 @@ rfc_CMD_PROP_RX_t RF_cmdPropRx =
     .rxConf.bAppendRssi = 0x0,
     .rxConf.bAppendTimestamp = 0x0,
     .rxConf.bAppendStatus = 0x1,
-    .syncWord = 0x00000000,
+    .syncWord = 0x930B51DE,
     .maxPktLen = 0x80, // MAKE SURE DATA ENTRY IS LARGE ENOUGH
     .address0 = 0xAA,
     .address1 = 0xBB,

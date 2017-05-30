@@ -48,6 +48,9 @@ Task_Struct radioTask;    /* not static so you can see in ROV */
 static Task_Params radioTaskParams;
 static uint8_t radioTaskStack[RFEASYLINKTX_TASK_STACK_SIZE];
 
+Task_Struct sendTask;    /* not static so you can see in ROV */
+static Task_Params sendTaskParams;
+static uint8_t sendTaskStack[RFEASYLINKTX_TASK_STACK_SIZE];
 
 static uint16_t seqNumber;
 
@@ -63,10 +66,14 @@ static Semaphore_Handle txDoneSem;
 
 #ifdef RFEASYLINKTX_ASYNC
 
+bool txDoneFlag = FALSE;
+
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void txDoneCb(EasyLink_Status status)
 {
  //       PIN_setOutputValue(pinHandle, Board_PIN_LED2,!PIN_getOutputValue(Board_PIN_LED2));
+    Semaphore_post(txDoneSem);
+//    txDoneFlag = TRUE;
 }
 #endif //RFEASYLINKTX_ASYNC
 
@@ -119,6 +126,31 @@ void radioTaskInit (PIN_Handle inPinHandle) {
     Task_construct(&radioTask, radioTaskFxn, &radioTaskParams, NULL);
 }
 
+uint8_t sendTemperature;
+uint8_t sendHumidity;
+
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+static void sendTaskFxn (UArg arg0, UArg arg1)
+{
+    radioTaskSendValue (sendTemperature, sendHumidity);
+}
+
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+void sendTaskInit (uint8_t _temperature, uint8_t _humidity) {
+    sendTemperature = _temperature;
+    sendHumidity = _humidity;
+
+    Task_Params_init(&sendTaskParams);
+    sendTaskParams.stackSize = RFEASYLINKTX_TASK_STACK_SIZE;
+    sendTaskParams.priority = RFEASYLINKTX_TASK_PRIORITY;
+    sendTaskParams.stack = &sendTaskStack;
+    sendTaskParams.arg0 = (UInt)1000000;
+
+    Task_construct(&sendTask, sendTaskFxn, &sendTaskParams, NULL);
+}
+
+
+
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void radioTaskSendValue (uint8_t _temperature, uint8_t _humidity)
 {
@@ -169,6 +201,31 @@ void radioTaskSendValue (uint8_t _temperature, uint8_t _humidity)
     /* Create semaphore instance */
     txDoneSem = Semaphore_create(0, &params, &eb);
 
+    txDoneFlag = FALSE;
     EasyLink_transmitAsync(&txPacket, txDoneCb);
+
+//    return;
+
+    if(Semaphore_pend(txDoneSem, (300000 / Clock_tickPeriod)) == FALSE)
+    {
+        if(EasyLink_abort() == EasyLink_Status_Success)
+        {
+
+           Semaphore_pend(txDoneSem, BIOS_WAIT_FOREVER);
+        }
+
+    }
+/*    int c = 0;
+    while (txDoneFlag == FALSE)
+    {
+        Task_sleep (1000);
+        c++;
+        //if (c > 100)
+        //    EasyLink_abort();
+
+
+    }*/
+
+
 
 }

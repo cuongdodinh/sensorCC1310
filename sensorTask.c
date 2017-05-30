@@ -37,7 +37,8 @@ void SensorTaskInit(void)
     scifInit(&scifDriverSetup);
 
     // Set the Sensor Controller task tick interval to 1 second
-    scifStartRtcTicksNow(0x00050000);
+    scifStartRtcTicksNow(0x02580000);
+//    scifStartRtcTicksNow(0x00050000);
 
     // Start Sensor Controller task
     scifStartTasksNbl(BV(SCIF_TEMPERATURE_TASK_ID));
@@ -64,6 +65,6 @@ static void newDataFromSensorCallback(void)
     /* Acknowledge the alert event */
     scifAckAlertEvents();
 
-    radioTaskSendValue (temperatureValue, humidityValue);
+    sendTaskInit (temperatureValue, humidityValue);
 
 }

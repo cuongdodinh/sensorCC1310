@@ -71,7 +71,7 @@ int main(void)
     Board_initGeneral();
 
     /* Open LED pins */
-  //  pinHandle = PIN_open(&pinState, pinTable);
+//    pinHandle = PIN_open(&pinState, pinTable);
 
     /* Clear LED pins */
 //    PIN_setOutputValue(pinHandle, Board_PIN_LED2, 0);
